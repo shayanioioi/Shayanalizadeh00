@@ -1,115 +1,52 @@
 require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
-const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
+const { Telegraf } = require('telegraf');
+const fetch = require('node-fetch');
 
-const token = process.env.BOT_TOKEN;
-if (!token) {
-  console.error('❌ BOT_TOKEN is not defined in .env file');
-  process.exit(1);
-}
-const bot = new TelegramBot(token, { polling: true });
+const bot = new Telegraf(process.env.BOT_TOKEN);
+const API_KEY = process.env.API_KEY;
 
-const app = express();
-app.use(bodyParser.json());
+bot.start((ctx) => ctx.reply('سلام! اسم بازیکن رو بفرست تا آمارشو بگم. مثلا: messi'));
 
-const FOOTBALL_RESULTS_URL = 'https://varzesh3.com/live';
-const ADMIN_ID = Number(process.env.ADMIN_ID);
-
-if (!ADMIN_ID) {
-  console.warn('⚠️ ADMIN_ID is not defined or invalid in .env');
-}
-
-// --- فرمان شروع برای همه کاربران ---
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-
-  bot.sendMessage(chatId, 'سلام! نتایج فوتبال رو از اینجا ببینید:', {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: '📊 مشاهده نتایج زنده',
-            url: FOOTBALL_RESULTS_URL
-          }
-        ]
-      ]
-    }
-  });
-});
-
-// --- پنل مدیریت فقط برای ادمین ---
-bot.onText(/\/panel/, (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
-
-  if (userId !== ADMIN_ID) {
-    return bot.sendMessage(chatId, '⛔️ دسترسی غیرمجاز.');
-  }
-
-  bot.sendMessage(chatId, '📋 پنل مدیریت:', {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '📊 مشاهده نتایج زنده', url: FOOTBALL_RESULTS_URL }
-        ],
-        [
-          { text: '🔄 آپدیت نتایج', callback_data: 'update_results' }
-        ]
-      ]
-    }
-  });
-});
-
-// --- دکمه پنل مدیریت ---
-bot.on('callback_query', (query) => {
-  const chatId = query.message.chat.id;
-
-  if (query.data === 'update_results') {
-    bot.sendMessage(chatId, `📢 آخرین نتایج فوتبال:\n${FOOTBALL_RESULTS_URL}`);
-  }
-
-  bot.answerCallbackQuery(query.id);
-});
-
-// --- آمار بازیکنان ---
-bot.onText(/\/player (.+)/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const name = match[1].trim();
+bot.on('text', async (ctx) => {
+  const playerName = ctx.message.text.toLowerCase();
+  ctx.reply(`در حال جستجو برای بازیکن: ${playerName}...`);
 
   try {
-    // --- نمونه API فرضی، جایگزین کن با API واقعی ---
-    const response = await axios.get(`https://api.example.com/players/${encodeURIComponent(name)}`, {
-      headers: { 'X-API-Key': process.env.API_KEY } // اگه لازم بود
+    // مرحله ۱: جستجوی بازیکن
+    const searchRes = await fetch(`https://api-football-v1.p.rapidapi.com/v3/players?search=${playerName}&season=2023`, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
+      }
     });
 
-    const player = response.data;
+    const searchData = await searchRes.json();
+
+    if (!searchData.response || searchData.response.length === 0) {
+      return ctx.reply('بازیکنی با این نام پیدا نشد ❌');
+    }
+
+    const player = searchData.response[0];
+    const stats = player.statistics[0];
 
     const message = `
-👤 نام: ${player.name}
-🌍 ملیت: ${player.nationality}
-🎯 گل‌ها: ${player.goals}
-🅰️ پاس گل: ${player.assists}
-🕹 بازی‌ها: ${player.matches}
-🛡 پست: ${player.position}
-📅 سن: ${player.age}
-    `;
+👤 نام: ${player.player.name}
+🎂 سن: ${player.player.age}
+🏟️ تیم: ${stats.team.name}
+🗓️ فصل: ${stats.league.season}
+⚽ گل‌ها: ${stats.goals.total || 0}
+🎯 پاس گل: ${stats.goals.assists || 0}
+🟥 کارت قرمز: ${stats.cards.red}
+🟨 کارت زرد: ${stats.cards.yellow}
+`;
 
-    bot.sendMessage(chatId, message);
+    ctx.reply(message);
   } catch (error) {
     console.error('❌ Error fetching player:', error.message);
-    bot.sendMessage(chatId, `❌ بازیکن "${name}" پیدا نشد یا مشکلی پیش آمد.`);
+    ctx.reply('مشکلی در دریافت اطلاعات بازیکن پیش اومد 😢');
   }
 });
 
-// --- اجرای سرور برای render ---
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Bot is running on port ${PORT}`);
-});
-
-// --- مدیریت خطاهای polling ---
-bot.on("polling_error", (err) => {
-  console.error('Polling error:', err.code, err.message);
-});
+bot.launch();
+console.log('Bot is running on port 10000');
