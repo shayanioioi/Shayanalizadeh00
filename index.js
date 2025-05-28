@@ -4,16 +4,11 @@ const bodyParser = require("body-parser");
 require("dotenv").config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const bot = new TelegramBot(process.env.BOT_TOKEN);
 
-// راه‌اندازی ربات با webhook
-const bot = new TelegramBot(process.env.BOT_TOKEN, { webHook: { port: port } });
-bot.setWebHook(`${process.env.WEBHOOK_URL}/webhook`);
-
-// بدنهٔ درخواست‌ها به صورت JSON
 app.use(bodyParser.json());
 
-// دریافت پیام‌های ربات از webhook
+// Webhook endpoint
 app.post("/webhook", (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
@@ -25,12 +20,13 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(chatId, "سلام! خوش اومدی 👋");
 });
 
-// صفحه تست
+// صفحه اصلی برای تست
 app.get("/", (req, res) => {
-  res.send("ربات تلگرام روی Render فعال است.");
+  res.send("ربات فعال است 🚀");
 });
 
-// اجرای سرور
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// شروع سرور
+app.listen(process.env.PORT, () => {
+  console.log(`Server is running on port ${process.env.PORT}`);
+  bot.setWebHook(`${process.env.WEBHOOK_URL}/webhook`);
 });
