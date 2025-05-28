@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const fetch = require('node-fetch');
@@ -60,18 +59,18 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// تنظیم Webhook با Express
+// راه‌اندازی Webhook
 const app = express();
 app.use(express.json());
-
 app.use(bot.webhookCallback('/webhook'));
+
 bot.telegram.setWebhook(`${process.env.WEBHOOK_URL}/webhook`);
 
 app.get('/', (req, res) => {
-  res.send('ربات در حال اجراست ✅');
+  res.send('ربات فوتبال در حال اجراست ✅');
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Webhook server running on port ${PORT}`);
+  console.log(`🚀 سرور Webhook روی پورت ${PORT} اجرا شد`);
 });
