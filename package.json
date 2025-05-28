@@ -1,25 +1,15 @@
 {
-  "name": "football-telegram-bot",
+  "name": "simple-telegram-bot",
   "version": "1.0.0",
-  "description": "ربات پیش‌بینی نتایج فوتبال با Node.js و Webhook",
+  "description": "ربات ساده تلگرام با Node.js و Webhook برای Render",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "telegram",
-    "bot",
-    "football",
-    "webhook",
-    "nodejs"
-  ],
-  "author": "YourName",
-  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.20.2",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "node-telegram-bot-api": "^0.61.0",
-    "sqlite3": "^5.1.6"
+    "node-telegram-bot-api": "^0.61.0"
   }
 }
