@@ -31,8 +31,15 @@ bot.on('text', async (ctx) => {
 
     const data = await response.json();
 
-    // لاگ برای دیباگ
-    console.log(JSON.stringify(data, null, 2));
+    // اگر کلید اشتباه یا ساب‌اسکرایب نشده باشی
+    if (data.message === 'You are not subscribed to this API.') {
+      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید. لطفاً اول در سایت RapidAPI اشتراک بگیرید.');
+    }
+
+    // اگر بیش از حد درخواست فرستادی
+    if (data.message === 'Too many requests') {
+      return ctx.reply('❌ تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً چند دقیقه صبر کنید.');
+    }
 
     if (!data.response || data.response.length === 0) {
       return ctx.reply('❌ بازیکنی با این نام پیدا نشد.');
@@ -55,19 +62,19 @@ bot.on('text', async (ctx) => {
 🗓️ فصل: ${stats.league.season}
 ⚽ گل‌ها: ${stats.goals.total ?? 0}
 🎯 پاس گل: ${stats.goals.assists ?? 0}
-📊 تعداد بازی‌ها: ${stats.games.appearences ?? 0}
-🟥 کارت قرمز: ${stats.cards.red}
-🟨 کارت زرد: ${stats.cards.yellow}
+📊 بازی‌ها: ${stats.games.appearences ?? 0}
+🟥 قرمز: ${stats.cards.red}
+🟨 زرد: ${stats.cards.yellow}
 `;
 
     ctx.reply(message);
   } catch (error) {
-    console.error('❌ خطا در گرفتن اطلاعات:', error);
+    console.error('❌ خطا در دریافت اطلاعات:', error);
     ctx.reply('مشکلی در دریافت اطلاعات بازیکن پیش اومد 😢');
   }
 });
 
-// سرور برای Render یا UptimeRobot
+// سرور برای Render
 const app = express();
 app.get('/', (req, res) => {
   res.send('ربات فوتبال در حال اجراست ✅');
@@ -78,9 +85,17 @@ app.listen(PORT, () => {
   console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
 });
 
-// راه‌اندازی ربات
-bot.launch();
+// راه‌اندازی امن ربات با حذف Webhook
+(async () => {
+  try {
+    await bot.telegram.deleteWebhook(); // حذف webhook برای جلوگیری از conflict
+    await bot.launch();
+    console.log('🤖 ربات با موفقیت لانچ شد');
+  } catch (err) {
+    console.error('❌ خطا در راه‌اندازی ربات:', err);
+  }
+})();
 
-// توقف امن ربات
+// توقف امن
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
