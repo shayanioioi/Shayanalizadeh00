@@ -5,15 +5,13 @@ const fetch = require('node-fetch');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const API_KEY = process.env.API_KEY;
 
-// پیام خوش‌آمد
 bot.start((ctx) => {
-  ctx.reply('سلام! 👋\nاسم بازیکن رو بفرست تا آمارشو بگم. مثلاً: messi یا ronaldo');
+  ctx.reply('سلام 👋\nاسم بازیکن مورد نظر رو بفرست (مثلاً messi یا ronaldo) تا آمارشو نشون بدم!');
 });
 
-// واکنش به هر پیام متنی
 bot.on('text', async (ctx) => {
   const playerName = ctx.message.text.trim().toLowerCase();
-  if (!playerName) return ctx.reply('اسم بازیکن رو درست وارد کن ✍️');
+  if (!playerName) return ctx.reply('لطفاً یک نام بازیکن ارسال کن ✍️');
 
   await ctx.reply(`🔍 در حال جستجو برای بازیکن: ${playerName} ...`);
 
@@ -34,30 +32,29 @@ bot.on('text', async (ctx) => {
       return ctx.reply('❌ بازیکنی با این نام پیدا نشد.');
     }
 
-    const playerInfo = data.response[0];
-    const stats = playerInfo.statistics[0];
+    const player = data.response[0];
+    const stats = player.statistics[0];
 
     const message = `
-👤 نام: ${playerInfo.player.name}
-🎂 سن: ${playerInfo.player.age}
-🌍 ملیت: ${playerInfo.player.nationality}
+👤 نام: ${player.player.name}
+🎂 سن: ${player.player.age}
+🌍 ملیت: ${player.player.nationality}
 🏟️ تیم: ${stats.team.name}
-🧢 پست: ${playerInfo.player.position}
+🧢 پست: ${player.player.position}
 🗓️ فصل: ${stats.league.season}
 ⚽ گل‌ها: ${stats.goals.total ?? 0}
 🎯 پاس گل: ${stats.goals.assists ?? 0}
-🟥 کارت قرمز: ${stats.cards.red}
-🟨 کارت زرد: ${stats.cards.yellow}
 📊 بازی‌ها: ${stats.games.appearences ?? 0}
+🟥 قرمز: ${stats.cards.red}
+🟨 زرد: ${stats.cards.yellow}
 `;
 
     ctx.reply(message);
   } catch (error) {
-    console.error('❌ خطا در دریافت اطلاعات بازیکن:', error);
-    ctx.reply('😢 مشکلی در دریافت اطلاعات بازیکن پیش اومد. بعداً دوباره امتحان کن.');
+    console.error('❌ خطا در گرفتن اطلاعات:', error);
+    ctx.reply('مشکلی در دریافت اطلاعات بازیکن پیش اومد 😢');
   }
 });
 
-// اجرای بات
 bot.launch();
-console.log('✅ Bot is running on port 10000');
+console.log('✅ Bot is running');
