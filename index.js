@@ -1,55 +1,69 @@
-const express = require("express");
-const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
-require("dotenv").config();
-
-const app = express();
-app.use(express.json());
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const TelegramBot = require('node-telegram-bot-api');
 
 const token = process.env.BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: false });
+const bot = new TelegramBot(token, { polling: true });
 
-const adminId = process.env.ADMIN_ID;
+const app = express();
+app.use(bodyParser.json());
 
-// مسیر وبهوک
-app.post("/webhook", (req, res) => {
-  bot.processUpdate(req.body);
-  res.sendStatus(200);
-});
+const FOOTBALL_RESULTS_URL = 'https://varzesh3.com/live'; // لینک ثابت
+const ADMIN_ID = Number(process.env.ADMIN_ID); // آیدی عددی از ENV گرفته می‌شود
 
-// هندلر شروع
+// پاسخ به /start برای همه کاربران
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "سلام! نتایج فوتبال رو اینجا ببینید.");
-});
-
-// هندلر برای گرفتن نتایج فوتبال
-bot.onText(/\/نتایج/, async (msg) => {
   const chatId = msg.chat.id;
 
-  try {
-    // آدرس وب‌سرویس ایرانی برای دریافت نتایج فوتبال (مثال تستی)
-    const response = await axios.get("https://api.football-api.ir/v1/results", {
-      headers: {
-        // فرض می‌کنیم این وب‌سرویس نیاز به API Key داره
-        "Authorization": "Bearer YOUR_API_KEY",
-      },
-    });
-
-    const results = response.data;
-
-    // نمونه ساده نمایش اولین بازی
-    const firstMatch = results[0];
-    const text = `🏆 ${firstMatch.league}\n${firstMatch.home_team} ${firstMatch.home_score} - ${firstMatch.away_score} ${firstMatch.away_team}`;
-
-    bot.sendMessage(chatId, text);
-  } catch (err) {
-    console.error("خطا در دریافت نتایج:", err.message);
-    bot.sendMessage(chatId, "❌ خطا در دریافت نتایج فوتبال.");
-  }
+  bot.sendMessage(chatId, 'سلام! نتایج فوتبال رو از اینجا ببینید:', {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '📊 مشاهده نتایج زنده',
+            url: FOOTBALL_RESULTS_URL
+          }
+        ]
+      ]
+    }
+  });
 });
 
-// سرور روی پورتی که Render فراهم کرده اجرا میشه
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// پنل مدیریت فقط برای ادمین
+bot.onText(/\/panel/, (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  if (userId !== ADMIN_ID) return;
+
+  bot.sendMessage(chatId, '📋 پنل مدیریت:', {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '📊 مشاهده نتایج زنده', url: FOOTBALL_RESULTS_URL }
+        ],
+        [
+          { text: '🔄 آپدیت نتایج', callback_data: 'update_results' }
+        ]
+      ]
+    }
+  });
+});
+
+// هندل کردن دکمه‌های پنل مدیریت
+bot.on('callback_query', (query) => {
+  const chatId = query.message.chat.id;
+
+  if (query.data === 'update_results') {
+    bot.sendMessage(chatId, `📢 آخرین نتایج فوتبال:\n${FOOTBALL_RESULTS_URL}`);
+  }
+
+  bot.answerCallbackQuery(query.id); // بستن لودینگ
+});
+
+// اجرای سرور Express (برای render)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Bot is running on port ${PORT}`);
 });
