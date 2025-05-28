@@ -1,14 +1,18 @@
+
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const fetch = require('node-fetch');
+const express = require('express');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const API_KEY = process.env.API_KEY;
 
+// پاسخ اولیه
 bot.start((ctx) => {
   ctx.reply('سلام 👋\nاسم بازیکن مورد نظر رو بفرست (مثلاً messi یا ronaldo) تا آمارشو نشون بدم!');
 });
 
+// پاسخ به پیام متنی
 bot.on('text', async (ctx) => {
   const playerName = ctx.message.text.trim().toLowerCase();
   if (!playerName) return ctx.reply('لطفاً یک نام بازیکن ارسال کن ✍️');
@@ -56,5 +60,18 @@ bot.on('text', async (ctx) => {
   }
 });
 
-bot.launch();
-console.log('✅ Bot is running');
+// تنظیم Webhook با Express
+const app = express();
+app.use(express.json());
+
+app.use(bot.webhookCallback('/webhook'));
+bot.telegram.setWebhook(`${process.env.WEBHOOK_URL}/webhook`);
+
+app.get('/', (req, res) => {
+  res.send('ربات در حال اجراست ✅');
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`🚀 Webhook server running on port ${PORT}`);
+});
