@@ -59,18 +59,20 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// راه‌اندازی Webhook
+// راه‌اندازی سرور (برای تست سلامت در Render)
 const app = express();
-app.use(express.json());
-app.use(bot.webhookCallback('/webhook'));
-
-bot.telegram.setWebhook(`${process.env.WEBHOOK_URL}/webhook`);
-
 app.get('/', (req, res) => {
   res.send('ربات فوتبال در حال اجراست ✅');
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 سرور Webhook روی پورت ${PORT} اجرا شد`);
+  console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
 });
+
+// فقط این خط را اضافه کن تا ربات شروع به کار کند (Long Polling برای Render)
+bot.launch();
+
+// هندل سیگنال‌های پایان برای جلوگیری از ارور در هاست
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
