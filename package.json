@@ -1,18 +1,11 @@
 {
-  "name": "football-bot",
+  "name": "football-telegram-bot",
   "version": "1.0.0",
-  "description": "ربات تلگرام نمایش آمار بازیکنان فوتبال با Telegraf و RapidAPI",
+  "description": "Telegram bot to fetch football player stats using RapidAPI",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "telegram-bot",
-    "football",
-    "telegraf",
-    "rapidapi",
-    "nodejs"
-  ],
   "author": "Shayan",
   "license": "MIT",
   "dependencies": {
