@@ -5,15 +5,15 @@ const express = require('express');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const API_KEY = process.env.API_KEY;
-const PORT = process.env.PORT || 10000;
 const DOMAIN = process.env.RENDER_EXTERNAL_URL;
+const PORT = process.env.PORT || 10000;
 
 // پیام شروع
 bot.start((ctx) => {
   ctx.reply('سلام 👋\nاسم بازیکن مورد نظر رو بفرست (مثلاً messi یا cristiano ronaldo) تا آمارشو نشون بدم!');
 });
 
-// پاسخ به پیام متنی
+// پیام متنی کاربر
 bot.on('text', async (ctx) => {
   const playerName = ctx.message.text.trim().toLowerCase();
   if (!playerName) return ctx.reply('لطفاً یک نام بازیکن وارد کن ✍️');
@@ -33,12 +33,13 @@ bot.on('text', async (ctx) => {
 
     const data = await response.json();
 
+    // خطاهای رایج
     if (data.message === 'You are not subscribed to this API.') {
-      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید.');
+      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید. لطفاً از سایت RapidAPI ساب‌اسکرایب کنید:\nhttps://rapidapi.com/api-sports/api/api-football/');
     }
 
     if (data.message === 'Too many requests') {
-      return ctx.reply('❌ تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً چند دقیقه صبر کنید.');
+      return ctx.reply('❌ درخواست‌های بیش از حد مجاز! لطفاً چند دقیقه صبر کنید.');
     }
 
     if (!data.response || data.response.length === 0) {
@@ -69,28 +70,27 @@ bot.on('text', async (ctx) => {
 
     ctx.reply(message);
   } catch (error) {
-    console.error('❌ خطا در دریافت اطلاعات:', error);
-    ctx.reply('مشکلی در دریافت اطلاعات بازیکن پیش اومد 😢');
+    console.error('❌ خطا در API:', error);
+    ctx.reply('خطایی در دریافت اطلاعات بازیکن رخ داد 😢 لطفاً دوباره امتحان کن.');
   }
 });
 
-// سرور برای Webhook
+// راه‌اندازی سرور و webhook
 const app = express();
 app.use(express.json());
-app.use(bot.webhookCallback('/')); // مسیر Webhook
+app.use(bot.webhookCallback('/'));
 
 app.get('/', (req, res) => {
-  res.send('ربات فوتبال در حال اجراست ✅');
+  res.send('✅ ربات فوتبال با موفقیت اجرا شده است.');
 });
 
-// ست کردن Webhook و اجرای سرور
 (async () => {
   try {
     await bot.telegram.setWebhook(`${DOMAIN}/`);
     app.listen(PORT, () => {
       console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
     });
-    console.log('🤖 ربات با webhook راه‌اندازی شد');
+    console.log('🤖 ربات به صورت webhook راه‌اندازی شد');
   } catch (err) {
     console.error('❌ خطا در راه‌اندازی webhook:', err);
   }
