@@ -1,4 +1,13 @@
-require('dotenv').config();
+const firstLink = $s('table.items tbody tr').first().find('a.spielprofil_tooltip').attr('href');
+
+if (!firstLink) {
+  const rawResult = $s('table.items tbody').text().trim();
+  if (rawResult.length < 10) {
+    return ctx.reply('⚠️ بازیکنی پیدا نشد! مطمئن شو نام را درست وارد کردی.');
+  } else {
+    return ctx.reply(`⚠️ بازیکنی پیدا نشد! اما نتایج جزئی یافت شد:\n\n${rawResult.slice(0, 300)}...`);
+  }
+}require('dotenv').config();
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const { Telegraf } = require('telegraf');
