@@ -70,9 +70,6 @@ bot.on('text', async (ctx) => {
   }
 });
 
-bot.launch().then(() => {
-  console.log('🤖 ربات راه‌اندازی شد.');
-});
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
