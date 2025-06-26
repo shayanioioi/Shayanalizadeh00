@@ -1,13 +1,4 @@
-const firstLink = $s('table.items tbody tr').first().find('a.spielprofil_tooltip').attr('href');
-
-if (!firstLink) {
-  const rawResult = $s('table.items tbody').text().trim();
-  if (rawResult.length < 10) {
-    return ctx.reply('⚠️ بازیکنی پیدا نشد! مطمئن شو نام را درست وارد کردی.');
-  } else {
-    return ctx.reply(`⚠️ بازیکنی پیدا نشد! اما نتایج جزئی یافت شد:\n\n${rawResult.slice(0, 300)}...`);
-  }
-}require('dotenv').config();
+require('dotenv').config();
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const { Telegraf } = require('telegraf');
@@ -15,76 +6,73 @@ const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.start((ctx) => {
-  ctx.reply('سلام! اسم بازیکن فوتبال رو به انگلیسی بفرست تا اطلاعاتش رو از Transfermarkt برات بیارم.');
+  ctx.reply('سلام! اسم بازیکن فوتبال رو به انگلیسی بفرست تا اطلاعاتش رو از Transfermarkt بیارم.');
 });
 
 bot.on('text', async (ctx) => {
   const name = ctx.message.text.trim();
-  if (!name) return ctx.reply('لطفاً یک نام وارد کن.');
+  if (!name) return ctx.reply('❗ لطفاً نام بازیکن رو وارد کن.');
 
-  await ctx.reply(`🔍 در حال جستجو برای "${name}" در سایت Transfermarkt...`);
+  await ctx.reply(`🔍 در حال جستجو برای "${name}" ...`);
 
   try {
-    // مرحله 1: جستجو در Transfermarkt
     const searchUrl = `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(name)}`;
-    const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const searchHtml = await searchRes.text();
-    const $s = cheerio.load(searchHtml);
+    
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
 
-    // پیدا کردن اولین لینک بازیکن در نتایج جستجو
-    const firstLink = $s('table.items tbody tr').first().find('a.spielprofil_tooltip').attr('href');
-    if (!firstLink) return ctx.reply('⚠️ بازیکنی پیدا نشد! لطفاً نام را دقیق‌تر وارد کن.');
+    const html = await res.text();
+    const $ = cheerio.load(html);
 
-    const playerUrl = 'https://www.transfermarkt.com' + firstLink;
+    const row = $('table.items tbody tr').first();
+    const link = row.find('a.spielprofil_tooltip').attr('href');
 
-    // مرحله 2: دریافت صفحه بازیکن
-    const playerRes = await fetch(playerUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const playerHtml = await playerRes.text();
-    const $ = cheerio.load(playerHtml);
-
-    // استخراج اطلاعات بازیکن
-    const fullName = $('#main h1').text().trim();
-
-    // ملیت (اولین پرچم)
-    const nationality = $('table.main-table tr:contains("Nationality") td').text().trim() || $('img.flaggenrahmen').attr('alt') || 'نامشخص';
-
-    // سن (متن کنار "Date of birth")
-    const dobText = $('table.main-table tr:contains("Date of birth") td').text().trim();
-    let age = 'نامشخص';
-    if (dobText) {
-      const ageMatch = dobText.match(/(\d+)\s*years?/i);
-      if (ageMatch) age = ageMatch[1];
+    if (!link) {
+      return ctx.reply('❌ بازیکنی پیدا نشد! لطفاً نام کامل‌تری وارد کن (مثل "lionel messi").');
     }
 
-    // پست
-    const position = $('table.main-table tr:contains("Position") td').text().trim() || 'نامشخص';
+    const profileUrl = 'https://www.transfermarkt.com' + link;
 
-    // تیم فعلی (داخل لینک با کلاس "data-header__club" یا جدول مخصوص)
-    const club = $('a.data-header__club').text().trim() || $('.dataHeader .dataMain .dataContent a').first().text().trim() || 'نامشخص';
+    const playerPage = await fetch(profileUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+    const playerHtml = await playerPage.text();
+    const $$ = cheerio.load(playerHtml);
 
-    // ارسال پیام با Markdown
+    const fullName = $$('#main h1').text().trim() || 'نامشخص';
+    const position = $$('span.data-header__label').text().trim() || 'نامشخص';
+    const club = $$('a.data-header__club-link').first().text().trim() || 'نامشخص';
+
+    // تولد و سن
+    const dobRow = $$('span.data-header__bio').text();
+    const ageMatch = dobRow.match(/(\d+)\syears/);
+    const age = ageMatch ? ageMatch[1] : 'نامشخص';
+
     const message = `
 👤 *نام:* ${fullName}
 🎂 *سن:* ${age}
-🇳🇱 *ملیت:* ${nationality}
 📌 *پست:* ${position}
-🏟️ *تیم فعلی:* ${club}
-🔗 [مشاهده پروفایل در Transfermarkt](${playerUrl})
+🏟 *تیم:* ${club}
+🔗 [مشاهده در Transfermarkt](${profileUrl})
 `;
 
     ctx.replyWithMarkdown(message);
-
-  } catch (error) {
-    console.error('❌ خطا در دریافت اطلاعات بازیکن:', error);
-    ctx.reply('❌ مشکلی در دریافت اطلاعات پیش آمد، لطفاً دوباره تلاش کنید.');
+  } catch (err) {
+    console.error('❌ خطا در پردازش:', err);
+    ctx.reply('❗ مشکلی در دریافت اطلاعات بازیکن پیش آمد. دوباره امتحان کن.');
   }
 });
 
-// لانچ بات با polling ساده
 bot.launch().then(() => {
-  console.log('🤖 ربات با موفقیت راه‌اندازی شد');
+  console.log('🤖 ربات راه‌اندازی شد.');
 });
 
-// توقف امن بات
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
