@@ -69,7 +69,3 @@ bot.on('text', async (ctx) => {
     ctx.reply('❗ مشکلی در دریافت اطلاعات بازیکن پیش آمد. دوباره امتحان کن.');
   }
 });
-
-
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
