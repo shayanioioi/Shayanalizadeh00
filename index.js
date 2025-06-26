@@ -1,101 +1,62 @@
 require('dotenv').config();
-const { Telegraf } = require('telegraf');
-const fetch = require('node-fetch');
 const express = require('express');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+const { Telegraf } = require('telegraf');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
-const API_KEY = process.env.API_KEY;
-const DOMAIN = process.env.RENDER_EXTERNAL_URL;
 const PORT = process.env.PORT || 10000;
 
-// پیام شروع
-bot.start((ctx) => {
-  ctx.reply('سلام 👋\nاسم بازیکن مورد نظر رو بفرست (مثلاً messi یا cristiano ronaldo) تا آمارشو نشون بدم!');
+// استارت بات
+bot.start(ctx => {
+  ctx.reply('سلام! نام بازیکن فوتبال رو به انگلیسی بفرست تا اطلاعاتش رو از Transfermarkt برات بیارم.');
 });
 
-// پیام متنی کاربر
-bot.on('text', async (ctx) => {
-  const playerName = ctx.message.text.trim().toLowerCase();
-  if (!playerName) return ctx.reply('لطفاً یک نام بازیکن وارد کن ✍️');
-
-  await ctx.reply(`🔍 در حال جستجو برای "${playerName}" ...`);
-
+bot.on('text', async ctx => {
+  const name = ctx.message.text.trim();
+  ctx.reply(`🔍 در حال جستجو برای "${name}" در Transfermarkt...`);
+  
   try {
-    const url = `https://api-football-v1.p.rapidapi.com/v3/players?search=${encodeURIComponent(playerName)}`;
+    // مرحله 1: جستجو در سایت
+    const searchUrl = `https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${encodeURIComponent(name)}`;
+    const searchRes = await fetch(searchUrl, { headers: { 'User-Agent':'Mozilla/5.0' } });
+    const searchHtml = await searchRes.text();
+    const $s = cheerio.load(searchHtml);
+    const firstLink = $s('table.items tbody tr').first().find('a.spielprofil_tooltip').attr('href');
+    if (!firstLink) return ctx.reply('⚠️ بازیکنی پیدا نشد! مطمئن شو نام رو درست فرستادی.');
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_KEY,
-        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com',
-      },
-    });
+    const playerUrl = 'https://www.transfermarkt.com' + firstLink;
+    const playerRes = await fetch(playerUrl, { headers: { 'User-Agent':'Mozilla/5.0' } });
+    const playerHtml = await playerRes.text();
+    const $ = cheerio.load(playerHtml);
 
-    const data = await response.json();
-
-    // خطاهای رایج
-    if (data.message === 'You are not subscribed to this API.') {
-      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید. لطفاً از سایت RapidAPI ساب‌اسکرایب کنید:\nhttps://rapidapi.com/api-sports/api/api-football/');
-    }
-
-    if (data.message === 'Too many requests') {
-      return ctx.reply('❌ درخواست‌های بیش از حد مجاز! لطفاً چند دقیقه صبر کنید.');
-    }
-
-    if (!data.response || data.response.length === 0) {
-      return ctx.reply('❌ بازیکنی با این نام پیدا نشد.');
-    }
-
-    const player = data.response[0];
-    const stats = player.statistics?.[0];
-
-    if (!stats) {
-      return ctx.reply('ℹ️ اطلاعات آماری برای این بازیکن در حال حاضر موجود نیست.');
-    }
+    const fullName = $('#main h1').text().trim();
+    const dataList = $('.info-table .dataZusatzbox').text().trim().split('\n').map(s => s.trim()).filter(Boolean);
+    const nationality = $('img.flaggenrahmen').attr('alt');
+    const age = dataList.find(l => l.includes('age'))?.split(' ')[1] || '—';
+    const position = $('span.position').text().trim();
+    const club = $('.marktwert-position + a').text().trim();
 
     const message = `
-👤 نام: ${player.player.name}
-🎂 سن: ${player.player.age}
-🌍 ملیت: ${player.player.nationality}
-🧢 پست: ${player.player.position}
-🏟️ تیم: ${stats.team.name}
-🏆 لیگ: ${stats.league.name}
-🗓️ فصل: ${stats.league.season}
-⚽ گل‌ها: ${stats.goals.total ?? 0}
-🎯 پاس گل: ${stats.goals.assists ?? 0}
-📊 بازی‌ها: ${stats.games.appearences ?? 0}
-🟥 قرمز: ${stats.cards.red}
-🟨 زرد: ${stats.cards.yellow}
+👤 اسم: *${fullName}*
+🎂 سن: ${age}
+🇳🇱 ملیت: ${nationality}
+📌 پست: ${position}
+🏟 تیم فعلی: ${club}
+🔗 پروفایل: [Transfermarkt](${playerUrl})
 `;
-
-    ctx.reply(message);
-  } catch (error) {
-    console.error('❌ خطا در API:', error);
-    ctx.reply('خطایی در دریافت اطلاعات بازیکن رخ داد 😢 لطفاً دوباره امتحان کن.');
+    ctx.replyWithMarkdown(message);
+  } catch(err) {
+    console.error(err);
+    ctx.reply('❌ خطا در دریافت اطلاعات، دوباره تلاش کن.');
   }
 });
 
-// راه‌اندازی سرور و webhook
+// وب‌سرور (برای deploy روی سرورها)
 const app = express();
-app.use(express.json());
-app.use(bot.webhookCallback('/'));
+app.get('/', (req, res) => res.send('⚽ TM Football Bot آنلاین است'));
+app.listen(PORT, () => console.log(`🚀 سرور روی پورت ${PORT}`));
 
-app.get('/', (req, res) => {
-  res.send('✅ ربات فوتبال با موفقیت اجرا شده است.');
-});
-
-(async () => {
-  try {
-    await bot.telegram.setWebhook(`${DOMAIN}/`);
-    app.listen(PORT, () => {
-      console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
-    });
-    console.log('🤖 ربات به صورت webhook راه‌اندازی شد');
-  } catch (err) {
-    console.error('❌ خطا در راه‌اندازی webhook:', err);
-  }
-})();
-
-// توقف امن
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+bot.launch().then(() => console.log('🤖 ربات راه‌اندازی شد'));
+process.once('SIGINT', ()=> bot.stop());
+process.once('SIGTERM', ()=> bot.stop());
