@@ -5,6 +5,8 @@ const express = require('express');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const API_KEY = process.env.API_KEY;
+const PORT = process.env.PORT || 10000;
+const DOMAIN = process.env.RENDER_EXTERNAL_URL;
 
 // پیام شروع
 bot.start((ctx) => {
@@ -31,12 +33,10 @@ bot.on('text', async (ctx) => {
 
     const data = await response.json();
 
-    // اگر کلید اشتباه یا ساب‌اسکرایب نشده باشی
     if (data.message === 'You are not subscribed to this API.') {
-      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید. لطفاً اول در سایت RapidAPI اشتراک بگیرید.');
+      return ctx.reply('❌ شما به این API در RapidAPI ساب‌اسکرایب نشده‌اید.');
     }
 
-    // اگر بیش از حد درخواست فرستادی
     if (data.message === 'Too many requests') {
       return ctx.reply('❌ تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً چند دقیقه صبر کنید.');
     }
@@ -74,25 +74,25 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// سرور برای Render
+// سرور برای Webhook
 const app = express();
+app.use(express.json());
+app.use(bot.webhookCallback('/')); // مسیر Webhook
+
 app.get('/', (req, res) => {
   res.send('ربات فوتبال در حال اجراست ✅');
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
-});
-
-// راه‌اندازی امن ربات با حذف Webhook
+// ست کردن Webhook و اجرای سرور
 (async () => {
   try {
-    await bot.telegram.deleteWebhook(); // حذف webhook برای جلوگیری از conflict
-    await bot.launch();
-    console.log('🤖 ربات با موفقیت لانچ شد');
+    await bot.telegram.setWebhook(`${DOMAIN}/`);
+    app.listen(PORT, () => {
+      console.log(`🚀 سرور روی پورت ${PORT} اجرا شد`);
+    });
+    console.log('🤖 ربات با webhook راه‌اندازی شد');
   } catch (err) {
-    console.error('❌ خطا در راه‌اندازی ربات:', err);
+    console.error('❌ خطا در راه‌اندازی webhook:', err);
   }
 })();
 
