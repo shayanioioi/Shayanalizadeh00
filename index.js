@@ -22,7 +22,7 @@ bot.start((ctx) => {
 // 🎯 دکمه فکت فوتبال
 bot.action('fact', async (ctx) => {
   try {
-    const factsData = fs.readFileSync('./data/footballFacts.json', 'utf-8');
+    const factsData = fs.readFileSync('./footballFacts.json', 'utf-8');
     const facts = JSON.parse(factsData);
     const randomFact = facts[Math.floor(Math.random() * facts.length)];
     await ctx.reply(`📢 فکت فوتبال:\n${randomFact}`);
