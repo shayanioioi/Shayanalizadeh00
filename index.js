@@ -53,7 +53,7 @@ bot.on('text', async (ctx) => {
 
     try {
       const response = await cohere.generate({
-        model: 'command-r',
+        model: 'xlarge', // مدل معتبر و فعال
         prompt: `پاسخ به سوال فوتبالی: ${question}`,
         max_tokens: 150,
         temperature: 0.7
@@ -127,7 +127,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// فقط این خط برای فعال‌سازی پولینگ کافیه:
+// فعال‌سازی پولینگ
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
