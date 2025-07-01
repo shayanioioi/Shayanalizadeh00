@@ -12,7 +12,8 @@
     "dotenv": "^16.3.1",
     "node-fetch": "2.6.7",
     "telegraf": "^4.16.2",
-    "cohere-ai": "^2.0.0"
+    "cohere-ai": "^2.0.0",
+    "cheerio": "^1.0.0-rc.12"
   },
   "engines": {
     "node": ">=14.0.0"
