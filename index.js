@@ -9,12 +9,13 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 // تابع فرار برای MarkdownV2
 const escapeMarkdown = (text) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
-// 🚀 /start: دکمه فکت فوتبال
+// 🚀 /start: دکمه‌ها
 bot.start((ctx) => {
   ctx.reply(
-    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی نام بازیکن رو بفرستی یا از دکمه زیر استفاده کنی:',
+    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی نام بازیکن رو بفرستی یا از دکمه‌ها استفاده کنی:',
     Markup.inlineKeyboard([
-      Markup.button.callback('📌 فکت فوتبال', 'fact')
+      [Markup.button.callback('📌 فکت فوتبال', 'fact')],
+      [Markup.button.callback('📊 آمار بازیکنان', 'players')]
     ])
   );
 });
@@ -27,8 +28,37 @@ bot.action('fact', async (ctx) => {
     const randomFact = facts[Math.floor(Math.random() * facts.length)];
     await ctx.reply(`📢 فکت فوتبال:\n${randomFact}`);
   } catch (error) {
-    console.error("❌ خطا در خواندن فایل:", error);
+    console.error("❌ خطا در دریافت فکت فوتبال:", error);
     await ctx.reply("❗ خطا در دریافت فکت فوتبال.");
+  }
+});
+
+// 📊 دکمه آمار بازیکنان
+bot.action('players', async (ctx) => {
+  try {
+    const playersData = fs.readFileSync('./players.json', 'utf-8');
+    const players = JSON.parse(playersData);
+
+    for (const player of players) {
+      const msg = `
+👤 *نام:* ${escapeMarkdown(player.name)}
+📌 *پست:* ${escapeMarkdown(player.position)}
+🎂 *سن:* ${escapeMarkdown(player.age.toString())}
+🌍 *ملیت:* ${escapeMarkdown(player.nationality)}
+      `;
+
+      if (player.image) {
+        await ctx.replyWithPhoto(
+          { url: player.image },
+          { caption: msg, parse_mode: 'MarkdownV2' }
+        );
+      } else {
+        await ctx.replyWithMarkdownV2(msg);
+      }
+    }
+  } catch (error) {
+    console.error("❌ خطا در دریافت اطلاعات بازیکنان:", error);
+    await ctx.reply("❗ خطا در دریافت اطلاعات بازیکنان.");
   }
 });
 
