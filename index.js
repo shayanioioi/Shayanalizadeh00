@@ -12,10 +12,10 @@ const escapeMarkdown = (text) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 // 🚀 /start: دکمه‌ها
 bot.start((ctx) => {
   ctx.reply(
-    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی نام بازیکن رو بفرستی یا از دکمه‌ها استفاده کنی:',
+    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی نام بازیکن رو بفرستی یا از دکمه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('📊 آمار بازیکنان', 'players')]
+      [Markup.button.callback('📊 آمار بازیکنان', 'player_stats')],
     ])
   );
 });
@@ -28,38 +28,15 @@ bot.action('fact', async (ctx) => {
     const randomFact = facts[Math.floor(Math.random() * facts.length)];
     await ctx.reply(`📢 فکت فوتبال:\n${randomFact}`);
   } catch (error) {
-    console.error("❌ خطا در دریافت فکت فوتبال:", error);
+    console.error("❌ خطا در خواندن فایل:", error);
     await ctx.reply("❗ خطا در دریافت فکت فوتبال.");
   }
 });
 
 // 📊 دکمه آمار بازیکنان
-bot.action('players', async (ctx) => {
-  try {
-    const playersData = fs.readFileSync('./players.json', 'utf-8');
-    const players = JSON.parse(playersData);
-
-    for (const player of players) {
-      const msg = `
-👤 *نام:* ${escapeMarkdown(player.name)}
-📌 *پست:* ${escapeMarkdown(player.position)}
-🎂 *سن:* ${escapeMarkdown(player.age.toString())}
-🌍 *ملیت:* ${escapeMarkdown(player.nationality)}
-      `;
-
-      if (player.image) {
-        await ctx.replyWithPhoto(
-          { url: player.image },
-          { caption: msg, parse_mode: 'MarkdownV2' }
-        );
-      } else {
-        await ctx.replyWithMarkdownV2(msg);
-      }
-    }
-  } catch (error) {
-    console.error("❌ خطا در دریافت اطلاعات بازیکنان:", error);
-    await ctx.reply("❗ خطا در دریافت اطلاعات بازیکنان.");
-  }
+bot.action('player_stats', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.reply('برای دریافت آمار، لطفاً نام بازیکن رو به انگلیسی بفرست ✍️');
 });
 
 // 🔍 جستجوی بازیکن
@@ -104,13 +81,7 @@ bot.on('text', async (ctx) => {
     const ageMatch = dobRow.match(/(\d+)\s+years/);
     const age = ageMatch ? ageMatch[1] : 'نامشخص';
 
-    const message = `
-👤 *نام:* ${escapeMarkdown(fullName)}
-🎂 *سن:* ${escapeMarkdown(age)}
-📌 *پست:* ${escapeMarkdown(position)}
-🏟 *تیم:* ${escapeMarkdown(club)}
-🔗 [مشاهده در Transfermarkt](${profileUrl})
-`;
+    const message = `👤 *نام:* ${escapeMarkdown(fullName)}\n🎂 *سن:* ${escapeMarkdown(age)}\n📌 *پست:* ${escapeMarkdown(position)}\n🏟 *تیم:* ${escapeMarkdown(club)}\n🔗 [مشاهده در Transfermarkt](${profileUrl})`;
 
     await ctx.replyWithMarkdownV2(message);
   } catch (err) {
