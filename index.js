@@ -17,7 +17,8 @@ bot.start((ctx) => {
     'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('❓ سوال فوتبالی', 'ask_football')]
+      [Markup.button.callback('❓ سوال فوتبالی', 'ask_football')],
+      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')]
     ])
   );
 });
@@ -53,7 +54,7 @@ bot.on('text', async (ctx) => {
 
     try {
       const response = await cohere.generate({
-        model: 'xlarge', // مدل معتبر و فعال
+        model: 'xlarge', // مدل معتبر
         prompt: `پاسخ به سوال فوتبالی: ${question}`,
         max_tokens: 150,
         temperature: 0.7
@@ -127,7 +128,75 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// فعال‌سازی پولینگ
+// --- اضافه کردن دکمه و فانکشن بارسلونا ---
+
+bot.action('barca_info', async (ctx) => {
+  await ctx.editMessageText('اطلاعات بارسلونا رو انتخاب کن:', Markup.inlineKeyboard([
+    [Markup.button.callback('📅 بازی‌های آینده', 'barca_fixtures')],
+    [Markup.button.callback('🏁 نتایج قبلی', 'barca_results')],
+    [Markup.button.callback('🩺 مصدومان', 'barca_injuries')],
+    [Markup.button.callback('🎯 گلزنان', 'barca_scorers')],
+    [Markup.button.callback('🎯 پاس‌دهندگان', 'barca_assists')],
+    [Markup.button.callback('🎯 درصد پاس صحیح', 'barca_pass_accuracy')],
+    [Markup.button.callback('🔙 بازگشت', 'start')]
+  ]));
+});
+
+// برگشت به منوی اصلی
+bot.action('start', (ctx) => {
+  ctx.editMessageText(
+    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
+    Markup.inlineKeyboard([
+      [Markup.button.callback('📌 فکت فوتبال', 'fact')],
+      [Markup.button.callback('❓ سوال فوتبالی', 'ask_football')],
+      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')]
+    ])
+  );
+});
+
+// Helper برای اسکرپینگ Sofascore بارسلونا
+async function fetchSofascorePage() {
+  const url = 'https://www.sofascore.com/team/football/fc-barcelona/17'; // لینک صفحه بارسلونا در sofascore
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      'Accept-Language': 'en-US,en;q=0.9',
+    }
+  });
+  return await res.text();
+}
+
+// نمونه ساده از اسکرپینگ بازی‌های آینده بارسلونا
+bot.action('barca_fixtures', async (ctx) => {
+  try {
+    const html = await fetchSofascorePage();
+    const $ = cheerio.load(html);
+
+    // این بخش باید با توجه به ساختار صفحه sofascore به روز شود
+    // این فقط نمونه است که بازی‌های آینده بارسلونا را استخراج می‌کند
+
+    let fixtures = [];
+    $('div.sc-fzqBZW.kVvqjl .sc-jTzLTM.gFzDLi').each((i, el) => {
+      if (i >= 5) return false; // فقط ۵ بازی آینده را بگیر
+      const date = $(el).find('.sc-bXEvKx.kIvgrY').text().trim();
+      const teams = $(el).find('.sc-cSHVUG.kfwCuA').text().trim();
+      fixtures.push(`${date}: ${teams}`);
+    });
+
+    if (fixtures.length === 0) {
+      return ctx.reply('بازی آینده‌ای پیدا نشد.');
+    }
+
+    await ctx.reply(`📅 بازی‌های آینده بارسلونا:\n${fixtures.join('\n')}`);
+  } catch (err) {
+    console.error('❌ خطا در دریافت بازی‌های آینده:', err);
+    ctx.reply('❗ خطا در دریافت بازی‌های آینده بارسلونا.');
+  }
+});
+
+// بقیه اکشن‌ها (نتایج قبلی، مصدومان، گلزنان، پاس‌دهندگان، درصد پاس صحیح) رو می‌تونی با اسکرپینگ مشابه پیاده کنی.
+// اگر خواستی می‌تونم بقیه‌ش رو هم کامل برات بنویسم.
+
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
