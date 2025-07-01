@@ -1,16 +1,92 @@
 [
   {
-    "name": "پدری",
-    "position": "هافبک",
-    "age": 21,
-    "nationality": "اسپانیا",
-    "image": "https://upload.wikimedia.org/wikipedia/commons/1/19/Pedri_2021.jpg"
+    "name": "Robert Lewandowski",
+    "age": 36,
+    "position": "Striker",
+    "nationality": "Poland",
+    "club": "FC Barcelona",
+    "goals": 44,
+    "assists": 12
   },
   {
-    "name": "لواندوفسکی",
-    "position": "مهاجم",
-    "age": 35,
-    "nationality": "لهستان",
-    "image": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Robert_Lewandowski_2022.jpg"
+    "name": "Pedri",
+    "age": 22,
+    "position": "Midfielder",
+    "nationality": "Spain",
+    "club": "FC Barcelona",
+    "goals": 11,
+    "assists": 18
+  },
+  {
+    "name": "Fermín López",
+    "age": 21,
+    "position": "Midfielder",
+    "nationality": "Spain",
+    "club": "FC Barcelona",
+    "goals": 6,
+    "assists": 4
+  },
+  {
+    "name": "Lamine Yamal",
+    "age": 17,
+    "position": "Right Winger",
+    "nationality": "Spain",
+    "club": "FC Barcelona",
+    "goals": 8,
+    "assists": 10
+  },
+  {
+    "name": "Gavi",
+    "age": 20,
+    "position": "Midfielder",
+    "nationality": "Spain",
+    "club": "FC Barcelona",
+    "goals": 5,
+    "assists": 8
+  },
+  {
+    "name": "Ronald Araújo",
+    "age": 26,
+    "position": "Defender",
+    "nationality": "Uruguay",
+    "club": "FC Barcelona",
+    "goals": 4,
+    "assists": 2
+  },
+  {
+    "name": "Jules Koundé",
+    "age": 26,
+    "position": "Defender",
+    "nationality": "France",
+    "club": "FC Barcelona",
+    "goals": 2,
+    "assists": 5
+  },
+  {
+    "name": "João Félix",
+    "age": 25,
+    "position": "Forward",
+    "nationality": "Portugal",
+    "club": "FC Barcelona",
+    "goals": 10,
+    "assists": 6
+  },
+  {
+    "name": "João Cancelo",
+    "age": 30,
+    "position": "Right Back",
+    "nationality": "Portugal",
+    "club": "FC Barcelona",
+    "goals": 3,
+    "assists": 7
+  },
+  {
+    "name": "Marc-André ter Stegen",
+    "age": 33,
+    "position": "Goalkeeper",
+    "nationality": "Germany",
+    "club": "FC Barcelona",
+    "goals": 0,
+    "assists": 0
   }
 ]
