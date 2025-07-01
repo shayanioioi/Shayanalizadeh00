@@ -4,13 +4,13 @@
     "position": "هافبک",
     "age": 21,
     "nationality": "اسپانیا",
-    "image": "https://example.com/pedri.jpg"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/1/19/Pedri_2021.jpg"
   },
   {
     "name": "لواندوفسکی",
     "position": "مهاجم",
     "age": 35,
     "nationality": "لهستان",
-    "image": "https://example.com/lewa.jpg"
+    "image": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Robert_Lewandowski_2022.jpg"
   }
 ]
