@@ -3,24 +3,26 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const { Telegraf, Markup } = require('telegraf');
+const cohere = require('cohere-ai');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+cohere.init('07Asz7wxv1gFJM0RbQlE0CbsuAPev6BIcSMBcZBg');
 
-// تابع فرار برای MarkdownV2
+// Escape for MarkdownV2
 const escapeMarkdown = (text) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
-// 🚀 /start: دکمه‌ها
+// /start
 bot.start((ctx) => {
   ctx.reply(
-    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی نام بازیکن رو بفرستی یا از دکمه‌های زیر استفاده کنی:',
+    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('📊 آمار بازیکنان', 'player_stats')],
+      [Markup.button.callback('❓ سوال فوتبالی', 'ask_football')]
     ])
   );
 });
 
-// 🎯 دکمه فکت فوتبال
+// 📌 فکت فوتبال
 bot.action('fact', async (ctx) => {
   try {
     const factsData = fs.readFileSync('./footballFacts.json', 'utf-8');
@@ -33,14 +35,43 @@ bot.action('fact', async (ctx) => {
   }
 });
 
-// 📊 دکمه آمار بازیکنان
-bot.action('player_stats', async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply('برای دریافت آمار، لطفاً نام بازیکن رو به انگلیسی بفرست ✍️');
+// ❓ سوال فوتبالی
+const userStates = new Map();
+
+bot.action('ask_football', async (ctx) => {
+  userStates.set(ctx.from.id, 'waiting_for_question');
+  await ctx.reply('❓ سوال فوتبالی خودتو بنویس...');
 });
 
-// 🔍 جستجوی بازیکن
 bot.on('text', async (ctx) => {
+  const userId = ctx.from.id;
+  const state = userStates.get(userId);
+
+  // اگر کاربر در حالت ارسال سوال فوتبالی است
+  if (state === 'waiting_for_question') {
+    const question = ctx.message.text.trim();
+    await ctx.reply('🤔 در حال بررسی سوال...');
+
+    try {
+      const response = await cohere.generate({
+        model: 'command-r',
+        prompt: `پاسخ به سوال فوتبالی: ${question}`,
+        max_tokens: 150,
+        temperature: 0.7
+      });
+
+      const answer = response.body.generations[0].text.trim();
+      await ctx.reply(`📘 پاسخ:\n${answer}`);
+    } catch (err) {
+      console.error("❌ خطا در پاسخ هوش مصنوعی:", err);
+      await ctx.reply('❗ خطا در دریافت پاسخ از هوش مصنوعی.');
+    }
+
+    userStates.delete(userId);
+    return;
+  }
+
+  // در غیر این صورت، جستجوی بازیکن انجام بده
   const name = ctx.message.text.trim();
   if (!name) return ctx.reply('❗ لطفاً نام بازیکن رو وارد کن.');
 
@@ -71,6 +102,7 @@ bot.on('text', async (ctx) => {
         'Accept-Language': 'en-US,en;q=0.9'
       }
     });
+
     const playerHtml = await playerRes.text();
     const $$ = cheerio.load(playerHtml);
 
@@ -81,7 +113,13 @@ bot.on('text', async (ctx) => {
     const ageMatch = dobRow.match(/(\d+)\s+years/);
     const age = ageMatch ? ageMatch[1] : 'نامشخص';
 
-    const message = `👤 *نام:* ${escapeMarkdown(fullName)}\n🎂 *سن:* ${escapeMarkdown(age)}\n📌 *پست:* ${escapeMarkdown(position)}\n🏟 *تیم:* ${escapeMarkdown(club)}\n🔗 [مشاهده در Transfermarkt](${profileUrl})`;
+    const message = `
+👤 *نام:* ${escapeMarkdown(fullName)}
+🎂 *سن:* ${escapeMarkdown(age)}
+📌 *پست:* ${escapeMarkdown(position)}
+🏟 *تیم:* ${escapeMarkdown(club)}
+🔗 مشاهده در Transfermarkt
+`;
 
     await ctx.replyWithMarkdownV2(message);
   } catch (err) {
@@ -90,7 +128,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// 🟢 راه‌اندازی ربات
+// راه‌اندازی ربات
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
