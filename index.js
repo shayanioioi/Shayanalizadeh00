@@ -47,7 +47,6 @@ bot.on('text', async (ctx) => {
   const userId = ctx.from.id;
   const state = userStates.get(userId);
 
-  // اگر کاربر در حالت ارسال سوال فوتبالی است
   if (state === 'waiting_for_question') {
     const question = ctx.message.text.trim();
     await ctx.reply('🤔 در حال بررسی سوال...');
@@ -71,7 +70,7 @@ bot.on('text', async (ctx) => {
     return;
   }
 
-  // در غیر این صورت، جستجوی بازیکن انجام بده
+  // جستجوی بازیکن
   const name = ctx.message.text.trim();
   if (!name) return ctx.reply('❗ لطفاً نام بازیکن رو وارد کن.');
 
@@ -128,7 +127,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// راه‌اندازی ربات
+// فقط این خط برای فعال‌سازی پولینگ کافیه:
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
