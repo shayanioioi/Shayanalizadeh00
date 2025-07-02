@@ -3,11 +3,9 @@ const fs = require('fs');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const { Telegraf, Markup } = require('telegraf');
-// const cohere = require('cohere-ai'); // حذف شده چون سوال فوتبالی نیست
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// Escape for MarkdownV2
 const escapeMarkdown = (text) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
 // /start
@@ -34,7 +32,7 @@ bot.action('fact', async (ctx) => {
   }
 });
 
-// جستجوی بازیکن (نام بازیکن)
+// جستجوی بازیکن
 bot.on('text', async (ctx) => {
   const name = ctx.message.text.trim();
   if (!name) return ctx.reply('❗ لطفاً نام بازیکن رو وارد کن.');
@@ -55,9 +53,7 @@ bot.on('text', async (ctx) => {
     const row = $('table.items tbody tr').first();
     const link = row.find('a.spielprofil_tooltip').attr('href');
 
-    if (!link) {
-      return ctx.reply('❌ بازیکنی پیدا نشد!');
-    }
+    if (!link) return ctx.reply('❌ بازیکنی پیدا نشد!');
 
     const profileUrl = 'https://www.transfermarkt.com' + link;
     const playerRes = await fetch(profileUrl, {
@@ -92,8 +88,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// --- اضافه کردن دکمه و فانکشن بارسلونا ---
-
+// 👇 منوی بارسلونا با دکمه اساطیر اضافه شده
 bot.action('barca_info', async (ctx) => {
   await ctx.editMessageText('اطلاعات بارسلونا رو انتخاب کن:', Markup.inlineKeyboard([
     [Markup.button.callback('📅 بازی‌های آینده', 'barca_fixtures')],
@@ -102,11 +97,12 @@ bot.action('barca_info', async (ctx) => {
     [Markup.button.callback('🎯 گلزنان', 'barca_scorers')],
     [Markup.button.callback('🎯 پاس‌دهندگان', 'barca_assists')],
     [Markup.button.callback('🎯 درصد پاس صحیح', 'barca_pass_accuracy')],
+    [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')],
     [Markup.button.callback('🔙 بازگشت', 'start')]
   ]));
 });
 
-// برگشت به منوی اصلی
+// ⬅ برگشت به منوی اصلی
 bot.action('start', (ctx) => {
   ctx.editMessageText(
     'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
@@ -117,30 +113,27 @@ bot.action('start', (ctx) => {
   );
 });
 
-// Helper برای اسکرپینگ Sofascore بارسلونا
+// 🎯 نمونه ساده بازی‌های آینده (میتونی گسترش بدی)
 async function fetchSofascorePage() {
-  const url = 'https://www.sofascore.com/team/football/fc-barcelona/17'; // لینک صفحه بارسلونا در sofascore
+  const url = 'https://www.sofascore.com/team/football/fc-barcelona/17';
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      'User-Agent': 'Mozilla/5.0',
       'Accept-Language': 'en-US,en;q=0.9',
     }
   });
   return await res.text();
 }
 
-// نمونه ساده از اسکرپینگ بازی‌های آینده بارسلونا
+// 🎯 نمایش بازی‌های آینده
 bot.action('barca_fixtures', async (ctx) => {
   try {
     const html = await fetchSofascorePage();
     const $ = cheerio.load(html);
 
-    // این بخش باید با توجه به ساختار صفحه sofascore به روز شود
-    // این فقط نمونه است که بازی‌های آینده بارسلونا را استخراج می‌کند
-
     let fixtures = [];
     $('div.sc-fzqBZW.kVvqjl .sc-jTzLTM.gFzDLi').each((i, el) => {
-      if (i >= 5) return false; // فقط ۵ بازی آینده را بگیر
+      if (i >= 5) return false;
       const date = $(el).find('.sc-bXEvKx.kIvgrY').text().trim();
       const teams = $(el).find('.sc-cSHVUG.kfwCuA').text().trim();
       fixtures.push(`${date}: ${teams}`);
@@ -157,9 +150,20 @@ bot.action('barca_fixtures', async (ctx) => {
   }
 });
 
-// بقیه اکشن‌ها (نتایج قبلی، مصدومان، گلزنان، پاس‌دهندگان، درصد پاس صحیح) رو می‌تونی با اسکرپینگ مشابه پیاده کنی.
-// اگر خواستی می‌تونم بقیه‌ش رو هم کامل برات بنویسم.
+// 🧠 واکنش به دکمه اسطوره‌ها - ژاوی
+bot.action('barca_legends', async (ctx) => {
+  const legendInfo = `🧠 *ژاوی هرناندز کروز*\n
+- متولد 1980
+- از 1997 تا 1999 در تیم بارسلونا بی (لاماسیا)
+- از 1998 تا 2015 در تیم اصلی بارسلونا (767 بازی، 85 گل، 184 پاس گل)
+- 25 جام رسمی با بارسلونا
+- مربی بارسا با 91 برد، 29 باخت، 23 مساوی
+- افتخارات مربی: 1 لالیگا، 1 سوپرکاپ، 2 جام خوان گمپر`;
 
+  await ctx.replyWithMarkdown(legendInfo);
+});
+
+// 🟢 اجرا
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
