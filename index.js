@@ -14,7 +14,8 @@ bot.start((ctx) => {
     'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')]
+      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')],
+      [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')]
     ])
   );
 });
@@ -88,7 +89,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// 👇 منوی بارسلونا با دکمه اساطیر اضافه شده
+// 👇 منوی اطلاعات بارسلونا بدون دکمه اسطوره‌ها
 bot.action('barca_info', async (ctx) => {
   await ctx.editMessageText('اطلاعات بارسلونا رو انتخاب کن:', Markup.inlineKeyboard([
     [Markup.button.callback('📅 بازی‌های آینده', 'barca_fixtures')],
@@ -97,7 +98,6 @@ bot.action('barca_info', async (ctx) => {
     [Markup.button.callback('🎯 گلزنان', 'barca_scorers')],
     [Markup.button.callback('🎯 پاس‌دهندگان', 'barca_assists')],
     [Markup.button.callback('🎯 درصد پاس صحیح', 'barca_pass_accuracy')],
-    [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')],
     [Markup.button.callback('🔙 بازگشت', 'start')]
   ]));
 });
@@ -108,7 +108,8 @@ bot.action('start', (ctx) => {
     'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')]
+      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')],
+      [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')]
     ])
   );
 });
