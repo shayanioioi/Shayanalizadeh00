@@ -8,14 +8,25 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 const escapeMarkdown = (text) => text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
 
+// بارگذاری لجندز از فایل جدا
+let legendsData = { players: [], coaches: [] };
+function loadLegends() {
+  try {
+    const data = fs.readFileSync('./legends.json', 'utf-8');
+    legendsData = JSON.parse(data);
+  } catch (error) {
+    console.error('❌ خطا در بارگذاری فایل legends.json:', error);
+  }
+}
+loadLegends();
+
 // /start
 bot.start((ctx) => {
   ctx.reply(
     'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
     Markup.inlineKeyboard([
       [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')],
-      [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')]
+      [Markup.button.callback('🧙‍♂️ افسانه‌ها', 'legends_main')]
     ])
   );
 });
@@ -33,7 +44,56 @@ bot.action('fact', async (ctx) => {
   }
 });
 
-// جستجوی بازیکن
+// منوی اصلی افسانه‌ها
+bot.action('legends_main', async (ctx) => {
+  await ctx.editMessageText('لطفا دسته‌بندی افسانه‌ها را انتخاب کن:', Markup.inlineKeyboard([
+    [Markup.button.callback('بازیکنان', 'legends_players')],
+    [Markup.button.callback('مربیان و مدیرعامل‌ها', 'legends_coaches')],
+    [Markup.button.callback('🔙 بازگشت', 'start')]
+  ]));
+});
+
+// نمایش دکمه‌های بازیکنان
+bot.action('legends_players', async (ctx) => {
+  const buttons = legendsData.players.map(player => [Markup.button.callback(player.name, `legend_player_${player.name}`)]);
+  buttons.push([Markup.button.callback('🔙 بازگشت', 'legends_main')]);
+  await ctx.editMessageText('یکی از بازیکنان را انتخاب کن:', Markup.inlineKeyboard(buttons));
+});
+
+// نمایش دکمه‌های مربیان و مدیرعامل‌ها
+bot.action('legends_coaches', async (ctx) => {
+  const buttons = legendsData.coaches.map(coach => [Markup.button.callback(coach.name, `legend_coach_${coach.name}`)]);
+  buttons.push([Markup.button.callback('🔙 بازگشت', 'legends_main')]);
+  await ctx.editMessageText('یکی از مربیان یا مدیرعامل‌ها را انتخاب کن:', Markup.inlineKeyboard(buttons));
+});
+
+// نمایش متن بازیکن
+bot.action(/legend_player_(.+)/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const name = ctx.match[1];
+  const player = legendsData.players.find(p => p.name === name);
+  if (player) {
+    await ctx.reply(player.text);
+  } else {
+    await ctx.reply('❗ اطلاعاتی برای این بازیکن یافت نشد.');
+  }
+});
+
+// نمایش متن مربی یا مدیرعامل
+bot.action(/legend_coach_(.+)/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const name = ctx.match[1];
+  const coach = legendsData.coaches.find(c => c.name === name);
+  if (coach) {
+    await ctx.reply(coach.text);
+  } else {
+    await ctx.reply('❗ اطلاعاتی برای این شخص یافت نشد.');
+  }
+});
+
+// حذف دکمه اطلاعات بارسلونا (طبق درخواست شما حذف شد)
+
+// جستجوی بازیکن (می‌تونی حذفش کنی اگر لازم نیست)
 bot.on('text', async (ctx) => {
   const name = ctx.message.text.trim();
   if (!name) return ctx.reply('❗ لطفاً نام بازیکن رو وارد کن.');
@@ -89,82 +149,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// 👇 منوی اطلاعات بارسلونا
-bot.action('barca_info', async (ctx) => {
-  await ctx.editMessageText('اطلاعات بارسلونا رو انتخاب کن:', Markup.inlineKeyboard([
-    [Markup.button.callback('📅 بازی‌های آینده', 'barca_fixtures')],
-    [Markup.button.callback('🏁 نتایج قبلی', 'barca_results')],
-    [Markup.button.callback('🩺 مصدومان', 'barca_injuries')],
-    [Markup.button.callback('🎯 گلزنان', 'barca_scorers')],
-    [Markup.button.callback('🎯 پاس‌دهندگان', 'barca_assists')],
-    [Markup.button.callback('🎯 درصد پاس صحیح', 'barca_pass_accuracy')],
-    [Markup.button.callback('🔙 بازگشت', 'start')]
-  ]));
-});
-
-// ⬅ برگشت به منوی اصلی
-bot.action('start', (ctx) => {
-  ctx.editMessageText(
-    'سلام! به ربات فوتبال خوش اومدی 🌟\nمیتونی از گزینه‌های زیر استفاده کنی:',
-    Markup.inlineKeyboard([
-      [Markup.button.callback('📌 فکت فوتبال', 'fact')],
-      [Markup.button.callback('⚽️ اطلاعات بارسلونا', 'barca_info')],
-      [Markup.button.callback('🧠 اسطوره‌های بارسلونا', 'barca_legends')]
-    ])
-  );
-});
-
-// 🎯 Sofascore scraping
-async function fetchSofascorePage() {
-  const url = 'https://www.sofascore.com/team/football/fc-barcelona/17';
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0',
-      'Accept-Language': 'en-US,en;q=0.9',
-    }
-  });
-  return await res.text();
-}
-
-// 🎯 بازی‌های آینده
-bot.action('barca_fixtures', async (ctx) => {
-  try {
-    const html = await fetchSofascorePage();
-    const $ = cheerio.load(html);
-
-    let fixtures = [];
-    $('div.sc-fzqBZW.kVvqjl .sc-jTzLTM.gFzDLi').each((i, el) => {
-      if (i >= 5) return false;
-      const date = $(el).find('.sc-bXEvKx.kIvgrY').text().trim();
-      const teams = $(el).find('.sc-cSHVUG.kfwCuA').text().trim();
-      fixtures.push(`${date}: ${teams}`);
-    });
-
-    if (fixtures.length === 0) {
-      return ctx.reply('بازی آینده‌ای پیدا نشد.');
-    }
-
-    await ctx.reply(`📅 بازی‌های آینده بارسلونا:\n${fixtures.join('\n')}`);
-  } catch (err) {
-    console.error('❌ خطا در دریافت بازی‌های آینده:', err);
-    ctx.reply('❗ خطا در دریافت بازی‌های آینده بارسلونا.');
-  }
-});
-
-// 🧠 اسطوره بارسا: ژاوی
-bot.action('barca_legends', async (ctx) => {
-  const legendInfo = `🧠 *ژاوی هرناندز کروز*\n
-- متولد 1980
-- از 1997 تا 1999 در تیم بارسلونا بی (لاماسیا)
-- از 1998 تا 2015 در تیم اصلی بارسلونا (767 بازی، 85 گل، 184 پاس گل)
-- 25 جام رسمی با بارسلونا
-- مربی بارسا با 91 برد، 29 باخت، 23 مساوی
-- افتخارات مربی: 1 لالیگا، 1 سوپرکاپ، 2 جام خوان گمپر`;
-
-  await ctx.replyWithMarkdown(legendInfo);
-});
-
-// 🟢 اجرا
+// 🟢 اجرای بات
 if (require.main === module) {
   bot.launch()
     .then(() => console.log("🤖 ربات فعال شد!"))
