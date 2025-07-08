@@ -89,7 +89,7 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// 👇 منوی اطلاعات بارسلونا بدون دکمه اسطوره‌ها
+// 👇 منوی اطلاعات بارسلونا
 bot.action('barca_info', async (ctx) => {
   await ctx.editMessageText('اطلاعات بارسلونا رو انتخاب کن:', Markup.inlineKeyboard([
     [Markup.button.callback('📅 بازی‌های آینده', 'barca_fixtures')],
@@ -114,7 +114,7 @@ bot.action('start', (ctx) => {
   );
 });
 
-// 🎯 نمونه ساده بازی‌های آینده (میتونی گسترش بدی)
+// 🎯 Sofascore scraping
 async function fetchSofascorePage() {
   const url = 'https://www.sofascore.com/team/football/fc-barcelona/17';
   const res = await fetch(url, {
@@ -126,7 +126,7 @@ async function fetchSofascorePage() {
   return await res.text();
 }
 
-// 🎯 نمایش بازی‌های آینده
+// 🎯 بازی‌های آینده
 bot.action('barca_fixtures', async (ctx) => {
   try {
     const html = await fetchSofascorePage();
@@ -151,7 +151,7 @@ bot.action('barca_fixtures', async (ctx) => {
   }
 });
 
-// 🧠 واکنش به دکمه اسطوره‌ها - ژاوی
+// 🧠 اسطوره بارسا: ژاوی
 bot.action('barca_legends', async (ctx) => {
   const legendInfo = `🧠 *ژاوی هرناندز کروز*\n
 - متولد 1980
